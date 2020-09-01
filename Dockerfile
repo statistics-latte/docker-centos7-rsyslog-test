@@ -3,10 +3,15 @@ FROM centos:7.6.1810
 #ENV TZ=Asia/Tokyo
 
 # Install packages
+#   epel-release for supervisor.
 RUN yum -y update \
-  && yum install -y sudo vim less rsyslog \
+  && yum install -y epel-release \
+  && yum -y update \
+  && yum install -y sudo vim less rsyslog supervisor \
   && rm -rf /var/cache/yum/* \
   && yum clean all
+
+RUN mkdir -p /var/log/supervisor
 
 # Create ordinary user (can use sudo without password)
 ARG DOCKER_UID=1000
@@ -41,7 +46,10 @@ RUN sed -i -e '/^\$SystemLogSocketName.*/s/^/# /' /etc/rsyslog.d/listen.conf \
 
 COPY rsyslog-test.conf /etc/rsyslog.d/
 
+# supervisord
+COPY supervisord.conf /etc/supervisord.conf
+
 USER docker
 WORKDIR /home/docker
 
-CMD ["/bin/bash"]
+CMD ["sudo", "/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
